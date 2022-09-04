@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import config
+from layer_normalize import LayerNormalization
 from multi_head import MultiHeadAttention
 
 import tensorflow._api.v2.compat.v1 as tf
@@ -43,46 +44,31 @@ class EncoderLayer(object):
         self.embed_dim = config.EMBED_SIZE
 
         with tf.variable_scope("encoder-layer_%s" % layer_index):
-            self.layer_normalize_1 = tf.keras.layers.LayerNormalization(epsilon=1e-6)
-            self.layer_normalize_2 = tf.keras.layers.LayerNormalization(epsilon=1e-6)
+            self.layer_normalizer_1 = tf.keras.layers.LayerNormalization(epsilon=1e-6)
+            self.layer_normalizer_2 = tf.keras.layers.LayerNormalization(epsilon=1e-6)
+
+        """
+        with tf.variable_scope("encoder-layer_%s/embed_dropout" % layer_index):
+            self.layer_normalizer_1 = LayerNormalization()
+        with tf.variable_scope("encoder-layer_%s/multi_heads_output" % layer_index):
+            self.layer_normalizer_2 = LayerNormalization()
+        """
 
         self.multi_heads_attention = MultiHeadAttention(layer_index)
         self.position_ffn = PositionFFN(layer_index)
 
-    """
-    # each layer has its own scale and bias parameters when normalization
-    def layer_normalize(self, embed, layer_name):
-        with tf.variable_scope("layer_norm/%s" % layer_name):
-            epsilon = 1e-6
-            scale = tf.get_variable(
-                "scale",
-                [self.embed_dim], dtype=tf.float32,
-                initializer=tf.truncated_normal_initializer(stddev=0.01))
-            bias = tf.get_variable(
-                "bias",
-                [self.embed_dim], dtype=tf.float32,
-                initializer=tf.truncated_normal_initializer(stddev=0.01))
-
-        mean = tf.reduce_mean(embed, axis=[-1], keepdims=True)
-        variance = tf.reduce_mean(tf.square(embed - mean), axis=[-1], keepdims=True)
-        normalized_embed = (embed - mean) / tf.square(variance + epsilon)
-        normalized_embed = normalized_embed * scale + bias
-
-        return normalized_embed
-    """
-
     def forward(self, embed_dropout, dropout_keep_prob_ph):
         # multi-heads attention network
-        #normalized_embed = self.layer_normalize(embed_dropout, "embed_dropout")
-        normalized_embed = self.layer_normalize_1(embed_dropout)
+        normalized_embed = self.layer_normalizer_1(embed_dropout)
+        #normalized_embed = self.layer_normalizer_1.normalize(embed_dropout)
         multi_heads_output = embed_dropout + self.multi_heads_attention.forward(normalized_embed)
 
         print("--- %s multi_heads_output" % self.layer_index)
         print(multi_heads_output)
 
         # position-wise feed forward network for encoder
-        #normalized_multi_heads_output = self.layer_normalize(multi_heads_output, "multi_heads_output")
-        normalized_multi_heads_output = self.layer_normalize_2(multi_heads_output)
+        normalized_multi_heads_output = self.layer_normalizer_2(multi_heads_output)
+        #normalized_multi_heads_output = self.layer_normalizer_2.normalize(multi_heads_output)
         position_ffn_output = multi_heads_output + self.position_ffn.forward(normalized_multi_heads_output, dropout_keep_prob_ph)
 
         print("--- %s position_ffn_output" % self.layer_index)
