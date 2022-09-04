@@ -1,7 +1,7 @@
 MODEL_NAME = 'transformer'
 
 CKPT_DIR = 'ckpt'
-MODEL_DIR = 'models'
+#MODEL_DIR = 'models'
 
 DATA_DIR = 'data'
 TRAIN_PATH = '%s/train' % DATA_DIR
@@ -59,6 +59,8 @@ NUM_ATTENTION_HEAD = 12
 """
 EMBED_SIZE = 144
 NUM_ATTENTION_HEAD = 3
+
+NUM_ENCODER_LAYER = 3
 
 
 # news categories

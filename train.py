@@ -2,7 +2,7 @@
 
 import config
 from input_feed import create_dataset
-from encoder import Encoder
+from classifier import Classifier
 from utils import current_time, cal_avg, restore_sentence_size
 
 """
@@ -16,7 +16,7 @@ tf.disable_v2_behavior()
 import os
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 
-CKPT_PATH = '%s/textcnn' % config.CKPT_DIR
+CKPT_PATH = '%s/transformer' % config.CKPT_DIR
 
 
 cfg = tf.ConfigProto(allow_soft_placement=True, log_device_placement=False)
@@ -63,7 +63,7 @@ def train():
 
         dropout_keep_prob_ph = tf.placeholder(tf.float32, name="dropout_keep_prob")
 
-        model = Encoder()
+        model = Classifier()
         logits = model.forward(content_ph, dropout_keep_prob_ph)
         loss_op, train_op = model.opt(logits, label_ph)
         preds_op, acc_op = model.predict(logits, label_ph)

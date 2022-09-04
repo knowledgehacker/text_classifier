@@ -6,10 +6,10 @@ tf.disable_v2_behavior()
 
 
 class AttentionHead(object):
-    def __init__(self, head_dim):
+    def __init__(self, head_dim, layer_index, head_index):
         self.embed_dim = config.EMBED_SIZE
 
-        with tf.variable_scope("multi-head", reuse=tf.AUTO_REUSE):
+        with tf.variable_scope("multi-head_%s__%s" % (layer_index, head_index)):
             self.q = tf.get_variable(name="query", shape=[self.embed_dim, head_dim], dtype=tf.float32,
                                      initializer=tf.truncated_normal_initializer(stddev=0.01))
             self.k = tf.get_variable(name="key", shape=[self.embed_dim, head_dim], dtype=tf.float32,
@@ -36,11 +36,11 @@ class AttentionHead(object):
 
 
 class MultiHeadAttention(object):
-    def __init__(self):
+    def __init__(self, layer_index):
         self.embed_dim = config.EMBED_SIZE
 
         head_dim = int(self.embed_dim / config.NUM_ATTENTION_HEAD)
-        self.heads = [AttentionHead(head_dim) for _ in range(config.NUM_ATTENTION_HEAD)]
+        self.heads = [AttentionHead(head_dim, layer_index, head_index) for head_index in range(config.NUM_ATTENTION_HEAD)]
 
     def forward(self, input_embed):
         # each head is of shape [seq_len, head_dim], ignoring batch_size, after concat, head_dim changed to embed_size
