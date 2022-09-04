@@ -1,7 +1,7 @@
-MODEL_NAME = 'transformer'
+MODEL_NAME = 'encoder'
+#MODEL_NAME = 'textcnn'
 
 CKPT_DIR = 'ckpt'
-#MODEL_DIR = 'models'
 
 DATA_DIR = 'data'
 TRAIN_PATH = '%s/train' % DATA_DIR
@@ -53,14 +53,26 @@ LEARNING_RATE = 1e-3
 TRAIN_KEEP_PROB = 0.7
 TEST_KEEP_PROB = 1.0
 
-"""
-EMBED_SIZE = 768
-NUM_ATTENTION_HEAD = 12
-"""
-EMBED_SIZE = 144
+if MODEL_NAME == 'textcnn':
+    EMBED_SIZE = 64
+elif MODEL_NAME == 'encoder':
+    # EMBED_SIZE = 768
+    EMBED_SIZE = 144
+else:
+    print("Unsupported model %s" % MODEL_NAME)
+    exit(-1)
+
+# encoder
+#NUM_ATTENTION_HEAD = 12
 NUM_ATTENTION_HEAD = 3
 
 NUM_ENCODER_LAYER = 3
+
+# textcnn
+HIDDEN_SIZE = 64
+
+CONV_FILTER_NUM = 128
+CONV_FILTER_KERNEL_SIZES = [2, 3, 4]
 
 
 # news categories

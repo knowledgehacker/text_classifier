@@ -1,11 +1,12 @@
 import config
 from encoder import Encoder
+from text_cnn import TextCNN
 
 import tensorflow._api.v2.compat.v1 as tf
 tf.disable_v2_behavior()
 
 
-class Classifier(object):
+class EncoderClassifier(object):
     def __init__(self):
         self.encoder = Encoder()
 
@@ -39,6 +40,47 @@ class Classifier(object):
         with tf.name_scope("output"):
             # prediction
             # preds = tf.argmax(tf.nn.softmax(logits), 1, name='predictions')
+            preds = tf.argmax(logits, 1, name='predictions')
+            # accuracy
+            correct_preds = tf.equal(tf.argmax(label, 1), preds)
+            acc = tf.reduce_mean(tf.cast(correct_preds, tf.float32), name='accuracy')
+
+        return preds, acc
+
+    def opt(self, logits, label):
+        with tf.name_scope("loss"):
+            # loss
+            loss_op = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=label, logits=logits))
+            train_op = tf.train.AdamOptimizer(learning_rate=config.LEARNING_RATE).minimize(loss_op)
+
+        return loss_op, train_op
+
+
+class TextCNNClassifier(object):
+    def __init__(self):
+        self.text_cnn = TextCNN()
+
+    def forward(self, input, dropout_keep_prob_ph):
+        h_dropout = self.text_cnn.forward(input, dropout_keep_prob_ph)
+
+        with tf.variable_scope('fc1'):
+            hl = tf.layers.dense(h_dropout, config.HIDDEN_SIZE, name='hl')
+            hl = tf.nn.relu(hl)
+
+        with tf.variable_scope('fc2'):
+            logits = tf.layers.dense(hl, config.NUM_CLASS, name='logits')
+
+        """
+        with tf.variable_scope('fc'):
+            logits = tf.layers.dense(h_dropout, config.NUM_CLASSES, name='logits')
+        """
+
+        return logits
+
+    def predict(self, logits, label):
+        with tf.name_scope("output"):
+            # prediction
+            #preds = tf.argmax(tf.nn.softmax(logits), 1, name='predictions')
             preds = tf.argmax(logits, 1, name='predictions')
             # accuracy
             correct_preds = tf.equal(tf.argmax(label, 1), preds)

@@ -2,7 +2,7 @@
 
 import config
 from input_feed import create_dataset
-from classifier import Classifier
+from classifier import EncoderClassifier, TextCNNClassifier
 from utils import current_time, cal_avg, restore_sentence_size
 
 """
@@ -16,7 +16,7 @@ tf.disable_v2_behavior()
 import os
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 
-CKPT_PATH = '%s/transformer' % config.CKPT_DIR
+CKPT_PATH = '%s/%s' % (config.CKPT_DIR, config.MODEL_NAME)
 
 
 cfg = tf.ConfigProto(allow_soft_placement=True, log_device_placement=False)
@@ -63,7 +63,14 @@ def train():
 
         dropout_keep_prob_ph = tf.placeholder(tf.float32, name="dropout_keep_prob")
 
-        model = Classifier()
+        if config.MODEL_NAME == "encoder":
+            model = EncoderClassifier()
+        elif config.MODEL_NAME == "textcnn":
+            model = TextCNNClassifier()
+        else:
+            print("Unsupported model %s" % config.MODEL_NAME)
+            exit(-1)
+
         logits = model.forward(content_ph, dropout_keep_prob_ph)
         loss_op, train_op = model.opt(logits, label_ph)
         preds_op, acc_op = model.predict(logits, label_ph)
