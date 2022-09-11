@@ -1,7 +1,10 @@
-MODEL_NAME = 'encoder'
-#MODEL_NAME = 'textcnn'
+#MODEL_NAME = 'encoder'
+MODEL_NAME = 'textcnn'
+
+MODLE_DIR = "models"
 
 CKPT_DIR = 'ckpt'
+CKPT_PATH = '%s/%s' % (CKPT_DIR, MODEL_NAME)
 
 DATA_DIR = 'data'
 TRAIN_PATH = '%s/train' % DATA_DIR
@@ -35,18 +38,16 @@ SENTENCE_SIZE_MAX = 1000
 
 NUM_EPOCH = 5
 
+STEPS_PER_CKPT = 50
+
+VALIDATE = False
+
 # shuffle size affects convergence greatly, it should be big enough
 SHUFFLE_SIZE = 5000
 
 # large batch, ex 200, does not work, I don't know why
 BATCH_SIZE = 128
-
-STEPS_PER_CKPT = 50
-
-TEST_BATCH_SIZE = 1000
-
-VALIDATE = False
-
+TEST_BATCH_SIZE = 300
 
 LEARNING_RATE = 1e-3
 
@@ -55,25 +56,22 @@ TEST_KEEP_PROB = 1.0
 
 if MODEL_NAME == 'textcnn':
     EMBED_SIZE = 64
+
+    HIDDEN_SIZE = 64
+
+    CONV_FILTER_NUM = 128
+    CONV_FILTER_KERNEL_SIZES = [2, 3, 4]
 elif MODEL_NAME == 'encoder':
     # EMBED_SIZE = 768
     EMBED_SIZE = 144
+
+    # NUM_ATTENTION_HEAD = 12
+    NUM_ATTENTION_HEAD = 3
+
+    NUM_ENCODER_LAYER = 3
 else:
     print("Unsupported model %s" % MODEL_NAME)
     exit(-1)
-
-# encoder
-#NUM_ATTENTION_HEAD = 12
-NUM_ATTENTION_HEAD = 3
-
-NUM_ENCODER_LAYER = 3
-
-# textcnn
-HIDDEN_SIZE = 64
-
-CONV_FILTER_NUM = 128
-CONV_FILTER_KERNEL_SIZES = [2, 3, 4]
-
 
 # news categories
 NEWS_CATEGORIES = ['体育', '财经', '房产', '家居', '教育', '科技', '时尚', '时政', '游戏', '娱乐']

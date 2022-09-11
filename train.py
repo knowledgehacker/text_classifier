@@ -16,8 +16,6 @@ tf.disable_v2_behavior()
 import os
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 
-CKPT_PATH = '%s/%s' % (config.CKPT_DIR, config.MODEL_NAME)
-
 
 cfg = tf.ConfigProto(allow_soft_placement=True, log_device_placement=False)
 cfg.gpu_options.allow_growth = True
@@ -54,7 +52,7 @@ def train():
             tf.data.get_output_types(train_dataset),
             tf.data.get_output_shapes(train_dataset),
             tf.data.get_output_classes(train_dataset))
-        content, label = iterator.get_next("next_batch")
+        content, label = iterator.get_next(name="next_batch")
 
         # create model network
         #To be able to feed with batches of different size, the first dimension should be None
@@ -132,7 +130,7 @@ def train():
                             print(current_time(),
                                   "step: %d, train_loss: %.3f, train_acc: %.3f" % (step, train_loss, train_acc))
 
-                        saver.save(sess, CKPT_PATH, global_step=step)
+                        saver.save(sess, config.CKPT_PATH, global_step=step)
 
                     step += 1
                 except tf.errors.OutOfRangeError:
@@ -150,8 +148,11 @@ def train():
                         print(current_time(),
                               "step: %d, train_loss: %.3f, train_acc: %.3f" % (step, train_loss, train_acc))
 
-                    saver.save(sess, CKPT_PATH, global_step=step)
+                    saver.save(sess, config.CKPT_PATH, global_step=step)
                     break
+
+            # save model
+            save_model(sess, config.MODLE_DIR, config.MODEL_NAME)
 
     print(current_time(), "training finishes...")
 
@@ -203,6 +204,17 @@ def validate(sess, test_iterator, preds_op, acc_op, loss_op,
     test_avg_acc = cal_avg(test_accs)
 
     return test_avg_loss, test_avg_acc
+
+
+def save_model(sess, model_dir, filename):
+    output_graph_def = tf.graph_util.convert_variables_to_constants(
+        sess,
+        sess.graph_def,
+        ["logits", "loss", "output/predictions", "output/accuracy"])
+
+    model_filepath = "%s/%s.pb" % (model_dir, filename)
+    with tf.gfile.GFile(model_filepath, "wb") as fout:
+        fout.write(output_graph_def.SerializeToString())
 
 
 def main():

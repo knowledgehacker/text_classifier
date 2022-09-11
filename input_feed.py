@@ -23,14 +23,15 @@ def create_dataset(input, sentence_size_max, test):
     Considering the case max pooling after convolutions selects index 0, which is the padding 0,
     will the model learns the padding 0 is insignificant after convolutions?
     """
-    padded_shapes = (
-        (tf.TensorShape([sentence_size_max]),
-         tf.TensorShape([config.NUM_CLASS])))
-    if not test:
-        dataset = dataset.shuffle(config.SHUFFLE_SIZE)
-        dataset = dataset.padded_batch(config.BATCH_SIZE, padded_shapes)
-    else:
-        dataset = dataset.padded_batch(config.TEST_BATCH_SIZE, padded_shapes)
+    with tf.device('/cpu:0'):
+        padded_shapes = (
+            (tf.TensorShape([sentence_size_max]),
+             tf.TensorShape([config.NUM_CLASS])))
+        if not test:
+            dataset = dataset.shuffle(config.SHUFFLE_SIZE)
+            dataset = dataset.padded_batch(config.BATCH_SIZE, padded_shapes)
+        else:
+            dataset = dataset.padded_batch(config.TEST_BATCH_SIZE, padded_shapes)
 
     return dataset
 
