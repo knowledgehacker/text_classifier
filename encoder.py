@@ -14,7 +14,7 @@ class PositionFFN(object):
 
         self.embed_dim = config.EMBED_SIZE
 
-        with tf.variable_scope("encoder-layer_%s" % layer_index):
+        with tf.variable_scope("position-wise__layer__%s" % layer_index):
             self.w_1 = tf.get_variable(name="w_1", shape=[self.embed_dim, self.embed_dim * 4], dtype=tf.float32,
                                        initializer=tf.truncated_normal_initializer(stddev=0.01))
             self.b_1 = tf.get_variable(name="b_1", shape=[self.embed_dim * 4], dtype=tf.float32,
@@ -43,14 +43,14 @@ class EncoderLayer(object):
         self.vocab_size = config.VOCAB_SIZE
         self.embed_dim = config.EMBED_SIZE
 
-        with tf.variable_scope("encoder-layer_%s" % layer_index):
+        with tf.variable_scope("encoder__layer_%s" % layer_index):
             self.layer_normalizer_1 = tf.keras.layers.LayerNormalization(epsilon=1e-6)
             self.layer_normalizer_2 = tf.keras.layers.LayerNormalization(epsilon=1e-6)
 
         """
-        with tf.variable_scope("encoder-layer_%s/embed_dropout" % layer_index):
+        with tf.variable_scope("encoder__layer_%s/embed_dropout" % layer_index):
             self.layer_normalizer_1 = LayerNormalization()
-        with tf.variable_scope("encoder-layer_%s/multi_heads_output" % layer_index):
+        with tf.variable_scope("encoder__layer_%s/multi_heads_output" % layer_index):
             self.layer_normalizer_2 = LayerNormalization()
         """
 
@@ -62,17 +62,19 @@ class EncoderLayer(object):
         normalized_embed = self.layer_normalizer_1(embed_dropout)
         #normalized_embed = self.layer_normalizer_1.normalize(embed_dropout)
         multi_heads_output = embed_dropout + self.multi_heads_attention.forward(normalized_embed)
-
+        """
         print("--- %s multi_heads_output" % self.layer_index)
         print(multi_heads_output)
+        """
 
         # position-wise feed forward network for encoder
         normalized_multi_heads_output = self.layer_normalizer_2(multi_heads_output)
         #normalized_multi_heads_output = self.layer_normalizer_2.normalize(multi_heads_output)
         position_ffn_output = multi_heads_output + self.position_ffn.forward(normalized_multi_heads_output, dropout_keep_prob_ph)
-
+        """
         print("--- %s position_ffn_output" % self.layer_index)
         print(position_ffn_output)
+        """
 
         return position_ffn_output
 
@@ -101,9 +103,10 @@ class Encoder(object):
 
     def forward(self, input_encode, dropout_keep_prob_ph):
         # embed input word and position, we do not have mask encode as input here
-
+        """
         print("--- input_encode")
         print(input_encode)
+        """
 
         """
         # TODO: something wrong with position encoding?
@@ -120,9 +123,10 @@ class Encoder(object):
 
         word_embed = tf.nn.embedding_lookup(self.word_embed_matrix, input_encode, name='word_embed_lookup')
         embed = word_embed
-
+        """
         print("--- embed")
         print(embed)
+        """
 
         #embed = self.layer_normalize(embed, "embed")
         embed = self.layer_normalize_0(embed)
@@ -134,4 +138,3 @@ class Encoder(object):
             encoder_output = encoder_layer.forward(encoder_output, dropout_keep_prob_ph)
 
         return encoder_output
-
