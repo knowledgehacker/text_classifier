@@ -28,7 +28,7 @@ class EncoderClassifier(Classifier):
     def __init__(self):
         self.encoder = Encoder()
 
-        with tf.variable_scope("classifier"):
+        with tf.variable_scope("encoder_classifier"):
             self.w = tf.get_variable(name="w", shape=[config.EMBED_SIZE, config.NUM_CLASS], dtype=tf.float32,
                                      initializer=tf.truncated_normal_initializer(stddev=0.01))
             self.b = tf.get_variable(name="b", shape=[config.NUM_CLASS], dtype=tf.float32,
@@ -47,19 +47,37 @@ class EncoderClassifier(Classifier):
         first_word = tf.nn.dropout(first_word, rate=1 - dropout_keep_prob_ph)
         logits = tf.add(tf.matmul(first_word, self.w), self.b, name="logits")
 
-        """
-        print("--- logits")
-        print(logits)
-        """
-
         return logits
 
 
-class TextCNNClassifier(object):
+class DistillEncoderClassifier(EncoderClassifier):
+    # equivalent implementation of tf.keras.losses.kullback_leibler_divergence(y_true, y_pred):
+    def kld(self, softmax_p, softmax_q):
+        epsilon = 1e-7
+        softmax_p = tf.clip_by_value(softmax_p, epsilon, 1)
+        softmax_q = tf.clip_by_value(softmax_q, epsilon, 1)
+
+        return tf.reduce_sum(softmax_p * tf.log(softmax_p / softmax_q), axis=-1)
+
+    def distill_loss(self, tea_logits, stu_logits, label):
+        t = config.T
+        soft_tea_logits = tea_logits / t
+        soft_stu_logits = stu_logits / t
+        tea_stu_kl = self.kld(tf.nn.softmax(soft_tea_logits), tf.nn.softmax(soft_stu_logits))
+
+        loss = tf.nn.softmax_cross_entropy_with_logits(labels=label, logits=stu_logits)
+
+        w = config.alpha
+        combine_loss_op = tf.reduce_mean(w * loss + (1 - w) * tea_stu_kl * (t ** 2), name="loss")
+
+        return combine_loss_op
+
+
+class TextCNNClassifier(Classifier):
     def __init__(self):
         self.text_cnn = TextCNN()
 
-        with tf.variable_scope("classifier"):
+        with tf.variable_scope("textcnn_classifier"):
             self.w = tf.get_variable(name="w", shape=[config.HIDDEN_SIZE, config.NUM_CLASS], dtype=tf.float32,
                                      initializer=tf.truncated_normal_initializer(stddev=0.01))
             self.b = tf.get_variable(name="b", shape=[config.NUM_CLASS], dtype=tf.float32,

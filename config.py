@@ -1,4 +1,5 @@
-MODEL_NAME = 'encoder'
+MODEL_NAME = 'distilled-encoder'
+#MODEL_NAME = 'encoder'
 #MODEL_NAME = 'textcnn'
 
 MODLE_DIR = "models"
@@ -38,15 +39,15 @@ SENTENCE_SIZE_MAX = 1000
 
 NUM_EPOCH = 5
 
-STEPS_PER_CKPT = 50
+STEPS_PER_CKPT = 100
 
 VALIDATE = False
 
 # shuffle size affects convergence greatly, it should be big enough
-SHUFFLE_SIZE = 5000
+SHUFFLE_SIZE = 3000
 
 # large batch, ex 200, does not work, I don't know why
-BATCH_SIZE = 128
+BATCH_SIZE = 96
 TEST_BATCH_SIZE = 300
 
 OPTIMIZER = 'adam'
@@ -65,12 +66,25 @@ if MODEL_NAME == 'textcnn':
     CONV_FILTER_KERNEL_SIZES = [2, 3, 4]
 elif MODEL_NAME == 'encoder':
     # EMBED_SIZE = 768
-    EMBED_SIZE = 144
+    EMBED_SIZE = 96
 
     # NUM_ATTENTION_HEAD = 12
-    NUM_ATTENTION_HEAD = 3
+    NUM_ATTENTION_HEAD = 4
 
-    NUM_ENCODER_LAYER = 3
+    NUM_ENCODER_LAYER = 4
+elif MODEL_NAME == 'distilled-encoder':
+    TEACHER_MODEL_NAME = 'encoder'
+
+    # EMBED_SIZE = 768
+    EMBED_SIZE = 96
+
+    # NUM_ATTENTION_HEAD = 12
+    NUM_ATTENTION_HEAD = 2
+
+    NUM_ENCODER_LAYER = 2
+
+    T = 2.0
+    alpha = 0.5
 else:
     print("Unsupported model %s" % MODEL_NAME)
     exit(-1)
@@ -80,6 +94,3 @@ NEWS_CATEGORIES = ['体育', '财经', '房产', '家居', '教育', '科技', '
 #                   0       1       2       3       4       5       6   7          8    9
 
 NUM_CLASS = len(NEWS_CATEGORIES)
-
-
-
