@@ -44,10 +44,10 @@ STEPS_PER_CKPT = 100
 VALIDATE = False
 
 # shuffle size affects convergence greatly, it should be big enough
-SHUFFLE_SIZE = 3000
+SHUFFLE_SIZE = 5000
 
 # large batch, ex 200, does not work, I don't know why
-BATCH_SIZE = 96
+BATCH_SIZE = 128
 TEST_BATCH_SIZE = 300
 
 OPTIMIZER = 'adam'
@@ -66,7 +66,7 @@ if MODEL_NAME == 'textcnn':
     CONV_FILTER_KERNEL_SIZES = [2, 3, 4]
 elif MODEL_NAME == 'encoder':
     # EMBED_SIZE = 768
-    EMBED_SIZE = 96
+    EMBED_SIZE = 144
 
     # NUM_ATTENTION_HEAD = 12
     NUM_ATTENTION_HEAD = 4
@@ -76,7 +76,7 @@ elif MODEL_NAME == 'distilled-encoder':
     TEACHER_MODEL_NAME = 'encoder'
 
     # EMBED_SIZE = 768
-    EMBED_SIZE = 96
+    EMBED_SIZE = 144
 
     # NUM_ATTENTION_HEAD = 12
     NUM_ATTENTION_HEAD = 2
