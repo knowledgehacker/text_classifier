@@ -3,6 +3,9 @@
 import time
 import os
 
+import tensorflow._api.v2.compat.v1 as tf
+tf.disable_v2_behavior()
+
 import config
 
 
@@ -23,6 +26,35 @@ def load_files(input):
                 files.append(path)
 
     return files
+
+
+def load_model(model_dir, model_name, outputs):
+    model_filepath = "%s/%s.pb" % (model_dir, model_name)
+
+    print("Loading model %s ..." % model_filepath)
+
+    with tf.gfile.FastGFile(model_filepath, 'rb') as fin:
+        graph_def = tf.GraphDef()
+        graph_def.ParseFromString(fin.read())
+
+    g = tf.Graph()
+    with g.as_default():
+        tf.import_graph_def(graph_def, return_elements=outputs, name=model_name)
+
+    print("Model %s loaded!" % model_filepath)
+
+    return g
+
+
+def save_model(sess, model_dir, model_name, outputs):
+    output_graph_def = tf.graph_util.convert_variables_to_constants(
+        sess,
+        sess.graph_def,
+        outputs)
+
+    model_filepath = "%s/%s.pb" % (model_dir, model_name)
+    with tf.gfile.GFile(model_filepath, "wb") as fout:
+        fout.write(output_graph_def.SerializeToString())
 
 
 def get_optimizer():

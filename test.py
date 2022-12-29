@@ -3,7 +3,7 @@ import os
 
 import config
 from input_feed import create_dataset
-from utils import current_time, cal_avg, with_prefix
+from utils import current_time, cal_avg, with_prefix, load_model
 
 """
 import tensorflow as tf
@@ -27,10 +27,9 @@ def test():
     sentence_size_max = config.SENTENCE_SIZE_MAX
     print("sentence_size_max=%d" % sentence_size_max)
 
-    g = tf.Graph()
+    outputs = ["logits", "loss", "output/predictions", "output/accuracy"]
+    g = load_model(config.MODLE_DIR, config.MODEL_NAME, outputs)
     with tf.Session(graph=g, config=cfg) as sess:
-        # load trained model
-        load_model(sess, config.MODLE_DIR, config.MODEL_NAME)
         #load_ckpt_model(sess, config.CKPT_DIR)
 
         # get prediction and other dependent tensors from the graph in the trained model for inference
@@ -94,25 +93,13 @@ def test():
     print(current_time(), "testing finishes...")
 
 
-def load_model(sess, model_dir, filename):
-    model_filepath = "%s/%s.pb" % (model_dir, filename)
-
-    print("Loading model %s ..." % model_filepath)
-
-    with tf.gfile.GFile(model_filepath, 'rb') as fin:
-        graph_def = sess.graph.as_graph_def()
-        graph_def.ParseFromString(fin.read())
-
-    tf.import_graph_def(graph_def, name=config.MODEL_NAME)
-
-    print("Model %s loaded!" % model_filepath)
-
-
+"""
 def load_ckpt_model(sess, ckpt_dir):
     ckpt_file = tf.train.latest_checkpoint(ckpt_dir)
     print("ckpt_file: %s" % ckpt_file)
     saver = tf.train.import_meta_graph("{}.meta".format(ckpt_file))
     saver.restore(sess, ckpt_file)
+"""
 
 
 def main():

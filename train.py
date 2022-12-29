@@ -3,7 +3,7 @@
 import config
 from input_feed import create_dataset
 from classifier import EncoderClassifier, TextCNNClassifier
-from utils import current_time, cal_avg, restore_sentence_size
+from utils import current_time, restore_sentence_size, save_model, get_optimizer
 
 """
 import tensorflow as tf
@@ -43,9 +43,11 @@ def train():
         train_iterator = tf.data.make_initializable_iterator(train_dataset)
         #train_iterator = train_dataset.make_initializable_iterator()
 
+        """
         test_dataset = create_dataset(config.TF_TEST_PATH, sentence_size_max, test=True)
         test_iterator = tf.data.make_initializable_iterator(test_dataset)
-        #test_iterator = test_dataset.make_initializable_iterator()
+        test_iterator = test_dataset.make_initializable_iterator()
+        """
 
         iterator = tf.data.Iterator.from_string_handle(
             handle_ph,
@@ -70,28 +72,20 @@ def train():
             exit(-1)
 
         logits = model.forward(content_ph, dropout_keep_prob_ph)
-        loss_op, train_op = model.opt(logits, label_ph)
+        loss_op = model.loss(logits, label_ph)
+        opt = get_optimizer()
+        train_op = opt.minimize(loss_op)
         preds_op, acc_op = model.predict(logits, label_ph)
 
         # create saver
-        saver = tf.train.Saver()
+        saver = tf.train.Saver(max_to_keep=1)
 
     with tf.Session(graph=g, config=cfg) as sess:
-        """
-        # Summaries for loss and accuracy
-        loss_summary = tf.summary.scalar("loss", loss_op)
-        acc_summary = tf.summary.scalar("accuracy", acc_op)
-
-        # Train Summaries
-        train_summary_op = tf.summary.merge([loss_summary, acc_summary])
-        train_summary_writer = tf.summary.FileWriter('logs/train_summaries.txt', sess.graph)
-        """
-
         tf.global_variables_initializer().run()
 
         # create handle to feed to iterator's string_handle placeholder
         train_handle = sess.run(train_iterator.string_handle())
-        test_handle = sess.run(test_iterator.string_handle())
+        #test_handle = sess.run(test_iterator.string_handle())
 
         step = 0
         for i in range(config.NUM_EPOCH):
@@ -100,121 +94,31 @@ def train():
 
             while True:
                 try:
-                    """
-                    #train_acc, train_loss, train_summaries = train_batch(sess, train_op, acc_op, loss_op,
-                    train_acc, train_loss = train_batch(sess, train_op, acc_op, loss_op,
-                                                        handle_ph, content_ph, label_ph, dropout_keep_prob_ph,
-                                                        train_handle, content, label)
-                    """
                     content_ts, label_ts = sess.run([content, label], feed_dict={handle_ph: train_handle})
-
-                    # _, acc, loss, train_summaries = sess.run([train_op, acc_op, loss_op, train_summary_op],
                     _, train_acc, train_loss = sess.run([train_op, acc_op, loss_op],
                                                         feed_dict={content_ph: content_ts,
                                                                    label_ph: label_ts,
                                                                    dropout_keep_prob_ph: config.TRAIN_KEEP_PROB})
 
-                    # train_summary_writer.add_summary(train_summaries, step)
-
                     if step % config.STEPS_PER_CKPT == 0:
-                        if config.VALIDATE:
-                            test_avg_loss, test_avg_acc = validate(sess, test_iterator, preds_op, acc_op, loss_op,
-                                     handle_ph, content_ph, label_ph, dropout_keep_prob_ph,
-                                     test_handle, content, label)
-                            #print("test_avg_loss: %.3f, test_avg_acc: %.3f" % (test_avg_loss, test_avg_acc))
-
-                            print(current_time(),
-                                  "step: %d, train_loss: %.3f, train_acc: %.3f | test_loss: %.3f, test_acc: %.3f" %
-                                  (step, train_loss, train_acc, test_avg_loss, test_avg_acc))
-                        else:
-                            print(current_time(),
-                                  "step: %d, train_loss: %.3f, train_acc: %.3f" % (step, train_loss, train_acc))
+                        print(current_time(),
+                              "step: %d, train_loss: %.3f, train_acc: %.3f" % (step, train_loss, train_acc))
 
                         saver.save(sess, config.CKPT_PATH, global_step=step)
 
                     step += 1
                 except tf.errors.OutOfRangeError:
-
-                    if config.VALIDATE:
-                        test_avg_loss, test_avg_acc = validate(sess, test_iterator, preds_op, acc_op, loss_op,
-                                                               handle_ph, content_ph, label_ph, dropout_keep_prob_ph,
-                                                               test_handle, content, label)
-                        #print("test_avg_loss: %.3f, test_avg_acc: %.3f" % (test_avg_loss, test_avg_acc))
-
-                        print(current_time(),
-                              "step: %d, train_loss: %.3f, train_acc: %.3f | test_loss: %.3f, test_acc: %.3f" %
-                              (step, train_loss, train_acc, test_avg_loss, test_avg_acc))
-                    else:
-                        print(current_time(),
-                              "step: %d, train_loss: %.3f, train_acc: %.3f" % (step, train_loss, train_acc))
+                    print(current_time(),
+                          "step: %d, train_loss: %.3f, train_acc: %.3f" % (step, train_loss, train_acc))
 
                     saver.save(sess, config.CKPT_PATH, global_step=step)
                     break
 
             # save model
-            save_model(sess, config.MODLE_DIR, config.MODEL_NAME)
+            outputs = ["logits", "loss", "output/predictions", "output/accuracy"]
+            save_model(sess, config.MODLE_DIR, config.MODEL_NAME, outputs)
 
     print(current_time(), "training finishes...")
-
-
-def train_batch(sess, train_op, acc_op, loss_op, # train_summery_op
-                handle_ph, content_ph, label_ph, dropout_keep_prob_ph,
-                train_handle, content, label):
-    content_ts, label_ts = sess.run([content, label], feed_dict={handle_ph: train_handle})
-
-    # _, acc, loss, train_summaries = sess.run([train_op, acc_op, loss_op, train_summary_op],
-    _, train_acc, train_loss = sess.run([train_op, acc_op, loss_op],
-                                        feed_dict={content_ph: content_ts,
-                                                   label_ph: label_ts,
-                                                   dropout_keep_prob_ph: config.TRAIN_KEEP_PROB})
-
-    return train_acc, train_loss#, train_summaries
-
-
-# batches get high accuracy from first to last, since the test cases are ordered by news categories
-def validate(sess, test_iterator, preds_op, acc_op, loss_op,
-             handle_ph, content_ph, label_ph, dropout_keep_prob_ph,
-             test_handle, content, label):
-    sess.run(test_iterator.initializer)
-
-    test_losses = []
-    test_accs = []
-
-    test_step = 0
-    while True:
-        try:
-            content_ts, label_ts = sess.run([content, label], feed_dict={handle_ph: test_handle})
-
-            test_preds, test_acc, test_loss = sess.run([preds_op, acc_op, loss_op],
-                                                       feed_dict={content_ph: content_ts,
-                                                                  label_ph: label_ts,
-                                                                  dropout_keep_prob_ph: config.TEST_KEEP_PROB})
-
-            sample_num = len(test_preds)
-            test_losses.append((test_loss, sample_num))
-            test_accs.append((test_acc, sample_num))
-            #print(current_time(), "test_step: %d, test_loss: %.3f, test_acc: %.3f" % (test_step, test_loss, test_acc))
-
-            test_step += 1
-        except tf.errors.OutOfRangeError:
-            #print(current_time(), "test_step: %d, test_loss: %.3f, test_acc: %.3f" % (test_step, test_loss, test_acc))
-            break
-
-    test_avg_loss = cal_avg(test_losses)
-    test_avg_acc = cal_avg(test_accs)
-
-    return test_avg_loss, test_avg_acc
-
-
-def save_model(sess, model_dir, filename):
-    output_graph_def = tf.graph_util.convert_variables_to_constants(
-        sess,
-        sess.graph_def,
-        ["logits", "loss", "output/predictions", "output/accuracy"])
-
-    model_filepath = "%s/%s.pb" % (model_dir, filename)
-    with tf.gfile.GFile(model_filepath, "wb") as fout:
-        fout.write(output_graph_def.SerializeToString())
 
 
 def main():

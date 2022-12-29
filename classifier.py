@@ -6,7 +6,25 @@ import tensorflow._api.v2.compat.v1 as tf
 tf.disable_v2_behavior()
 
 
-class EncoderClassifier(object):
+class Classifier(object):
+    def predict(self, logits, label):
+        with tf.name_scope("output"):
+            # prediction
+            # preds = tf.argmax(tf.nn.softmax(logits), 1, name='predictions')
+            preds = tf.argmax(logits, 1, name='predictions')
+            # accuracy
+            correct_preds = tf.equal(tf.argmax(label, 1), preds)
+            acc = tf.reduce_mean(tf.cast(correct_preds, tf.float32), name='accuracy')
+
+        return preds, acc
+
+    def loss(self, logits, label):
+        loss_op = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=label, logits=logits), name="loss")
+
+        return loss_op
+
+
+class EncoderClassifier(Classifier):
     def __init__(self):
         self.encoder = Encoder()
 
@@ -36,24 +54,6 @@ class EncoderClassifier(object):
 
         return logits
 
-    def predict(self, logits, label):
-        with tf.name_scope("output"):
-            # prediction
-            # preds = tf.argmax(tf.nn.softmax(logits), 1, name='predictions')
-            preds = tf.argmax(logits, 1, name='predictions')
-            # accuracy
-            correct_preds = tf.equal(tf.argmax(label, 1), preds)
-            acc = tf.reduce_mean(tf.cast(correct_preds, tf.float32), name='accuracy')
-
-        return preds, acc
-
-    def opt(self, logits, label):
-        # loss
-        loss_op = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=label, logits=logits), name="loss")
-        train_op = tf.train.AdamOptimizer(learning_rate=config.LEARNING_RATE).minimize(loss_op)
-
-        return loss_op, train_op
-
 
 class TextCNNClassifier(object):
     def __init__(self):
@@ -76,19 +76,3 @@ class TextCNNClassifier(object):
         logits = tf.add(tf.matmul(hl, self.w), self.b, name='logits')
 
         return logits
-
-    def predict(self, logits, label):
-        with tf.name_scope("output"):
-            # prediction
-            preds = tf.argmax(logits, 1, name='predictions')
-            # accuracy
-            correct_preds = tf.equal(tf.argmax(label, 1), preds)
-            acc = tf.reduce_mean(tf.cast(correct_preds, tf.float32), name='accuracy')
-
-        return preds, acc
-
-    def opt(self, logits, label):
-        loss_op = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=label, logits=logits), name="loss")
-        train_op = tf.train.AdamOptimizer(learning_rate=config.LEARNING_RATE).minimize(loss_op)
-
-        return loss_op, train_op

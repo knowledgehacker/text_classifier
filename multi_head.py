@@ -9,7 +9,7 @@ class AttentionHead(object):
     def __init__(self, head_dim, layer_index, head_index):
         self.embed_dim = config.EMBED_SIZE
 
-        with tf.variable_scope("multi-head__%s__%s" % (layer_index, head_index)):
+        with tf.variable_scope("multi-head__%s_%s" % (layer_index, head_index)):
             self.q = tf.get_variable(name="query", shape=[self.embed_dim, head_dim], dtype=tf.float32,
                                      initializer=tf.truncated_normal_initializer(stddev=0.01))
             self.k = tf.get_variable(name="key", shape=[self.embed_dim, head_dim], dtype=tf.float32,

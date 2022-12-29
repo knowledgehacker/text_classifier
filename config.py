@@ -1,5 +1,5 @@
-#MODEL_NAME = 'encoder'
-MODEL_NAME = 'textcnn'
+MODEL_NAME = 'encoder'
+#MODEL_NAME = 'textcnn'
 
 MODLE_DIR = "models"
 
@@ -38,7 +38,7 @@ SENTENCE_SIZE_MAX = 1000
 
 NUM_EPOCH = 5
 
-STEPS_PER_CKPT = 100
+STEPS_PER_CKPT = 50
 
 VALIDATE = False
 
@@ -48,6 +48,8 @@ SHUFFLE_SIZE = 5000
 # large batch, ex 200, does not work, I don't know why
 BATCH_SIZE = 128
 TEST_BATCH_SIZE = 300
+
+OPTIMIZER = 'adam'
 
 LEARNING_RATE = 1e-3
 
