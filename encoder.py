@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import config
-from layer_normalize import LayerNormalization
 from multi_head import MultiHeadAttention
 
 import tensorflow._api.v2.compat.v1 as tf
@@ -14,7 +13,7 @@ class PositionFFN(object):
 
         self.embed_dim = config.EMBED_SIZE
 
-        with tf.variable_scope("position-wise__layer__%s" % layer_index):
+        with tf.variable_scope("position-wise__layer_%s" % layer_index):
             self.w_1 = tf.get_variable(name="w_1", shape=[self.embed_dim, self.embed_dim * 4], dtype=tf.float32,
                                        initializer=tf.truncated_normal_initializer(stddev=0.01))
             self.b_1 = tf.get_variable(name="b_1", shape=[self.embed_dim * 4], dtype=tf.float32,
